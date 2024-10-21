@@ -2,9 +2,8 @@ import cv2
 import numpy as np
 from keras.models import load_model
 
-# Load the pre-trained models with different accuracies
-model1 = load_model('traffic_classifier.h5')  # First model with lower accuracy
-model2 = load_model('best_model.h5')  # Second model with higher accuracy
+# Load the pre-trained model
+model = load_model('traffic_classifier.h5')
 
 # Dictionary to label all traffic sign classes
 classes = {
@@ -24,14 +23,14 @@ classes = {
     42: 'End of no passing', 43: 'End no passing veh > 3.5 tons'
 }
 
-# Preprocess the image for both models
+
 def preprocess_image(img):
-    img = cv2.resize(img, (30, 30))  # Resize for model input
+    img = cv2.resize(img, (30, 30))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = np.expand_dims(img, axis=0)
     return img
 
-# Function to detect sign and use both models
+
 def detect_sign(frame):
     # Convert frame to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -54,41 +53,28 @@ def detect_sign(frame):
             # Preprocess the ROI
             preprocessed = preprocess_image(roi)
 
-            # Make predictions with both models
-            prediction1 = model1.predict(preprocessed)  # First model prediction
-            prediction2 = model2.predict(preprocessed)  # Second model prediction
-
-            # Get predicted class for both models
-            sign_class1 = np.argmax(prediction1) + 1
-            sign_class2 = np.argmax(prediction2) + 1
-
-            # Display the traffic sign name from the model with higher confidence
-            if sign_class2 != sign_class1:  # Use second model if it gives different result
-                sign_class = sign_class2
-            else:
-                sign_class = sign_class1
-
+            # Make prediction
+            prediction = model.predict(preprocessed)
+            sign_class = np.argmax(prediction) + 1
             sign_name = classes[sign_class]
 
-            # Draw rectangle and label with only the sign name
+            # Draw rectangle and label
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(frame, sign_name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
     return frame
 
+
 # Main function to run the program
 def main():
-    cap = cv2.VideoCapture(1)  # Change this to the index you found for DroidCam
-    cap.set(3, 640)  # Set the width of the frame
-    cap.set(4, 480)  # Set the height of the frame
+    cap = cv2.VideoCapture(0)  # 0 for default camera
 
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("Failed to grab frame.")
             break
 
-        # Detect and recognize traffic signs using both models
+        # Detect and recognize traffic signs
         processed_frame = detect_sign(frame)
 
         # Display the result
